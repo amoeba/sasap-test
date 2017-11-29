@@ -1,0 +1,139 @@
+---
+title: "data cleaning"
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r}
+# mac users can download directly from the KNB
+catch <- read.csv("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35b.302.1", 
+                  stringsAsFactors = FALSE)
+
+# or if you're on windows
+catch <- read.csv("df35b.302.1.csv",
+                  stringsAsFactors = FALSE)
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+```
+
+```{r}
+catch <- catch %>% 
+  select(-All, -notesRegCode)
+```
+
+```{r}
+catch <- catch %>% 
+  gather(species, catch, -Region, -Year)
+```
+
+```{r}
+summary(catch)
+catch_integers <- as.integer(catch$catch)
+which(is.na(catch_integers))
+catch[401,"catch"] <- 1
+catch[401,]
+summary(catch)
+```
+
+```{r}
+catch <- catch %>% 
+  mutate(catch = as.integer(catch))
+
+summary(catch)
+```
+
+```{r}
+catch <- catch %>% 
+  mutate(catch = catch * 1000)
+
+summary(catch)
+```
+
+```{r}
+catch %>% 
+  group_by(Region) %>% 
+  summarize(mean_catch = mean(catch))
+```
+
+```{r}
+sample_size <- catch %>% 
+  group_by(Region) %>% 
+  summarize(n = n())
+```
+
+```{r}
+sse_catches <- catch %>% 
+  filter(Region == "SSE")
+
+sse_catches
+```
+
+```{r}
+large_catches <- catch %>% 
+  filter(catch > 1000000)
+
+summary(large_catches)
+```
+
+```{r}
+large_sse_catch <- catch %>% 
+  filter(catch > 1000000 & Region == "SSE")
+
+large_sse_catch <- catch %>% 
+  filter(catch > 1000000) %>% 
+  filter(Region == "SSE")
+
+summary(large_sse_catch)
+```
+
+```{r}
+large_sse_catch %>% 
+  arrange(desc(species), Year)
+```
+
+```{r}
+region_defs <- read.csv("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35b.303.1", stringsAsFactors = FALSE)
+
+catch %>% 
+  group_by(Region) %>% 
+  summarise(total_catch = sum(catch)) %>% 
+  left_join(region_defs, by = c("Region" = "code"))
+```
+
+```{r}
+dates_df <- data.frame(date = c("5/24/1930",
+                                "5/25/1930",
+                                "5/26/1930",
+                                "5/27/1930",
+                                "5/28/1930"),
+                       stringsAsFactors = FALSE)
+dates_df
+
+dates_df <- dates_df %>% 
+  separate(date, c("month", "day", "year"), "/")
+
+dates_df %>% 
+  unite(date, month, day, year, sep = "/")
+```
+
+
+```{r}
+catch_tall <- catch %>%
+  select(-All, -notesRegCode) %>% 
+  gather(species, catch, -Region, -Year)
+```
+
+It turns out the I is a 1...
+
+```{r}
+catch_tall %>% 
+  mutate(catch = ifelse(catch == "I", 1, catch)) %>% 
+  mutate(catch = as.integer(catch)) %>% 
+  group_by(Region) %>% 
+  summarize(mean_catch = mean(catch)) %>% 
+  left_join(region_defs, by = c("Region" = "code"))
+```
